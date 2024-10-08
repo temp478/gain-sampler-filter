@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSP AUDIO GAIN
+    </title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            overflow: auto; /* Allow scrolling */
+        }
+
+        #popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            max-height: 80%; /* Limit height to allow scrolling */
+            overflow-y: auto; /* Enable vertical scrolling */
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            opacity: 0.95;
+        }
+
+        h4 {
+            margin: 0 0 10px 0;
+        }
+
+        label {
+            display: block;
+            margin: 5px 0;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        select {
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Plant emoji styling */
+        #plantEmoji {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 50px; /* Adjust size as needed */
+            display: none; /* Initially hidden */
+        }
+    </style>
+</head>
+<body>
+    <audio id="audio" src="aporee geomix cashmere21-09-24 3.mp3" preload="auto" autoplay loop></audio>
+
+    <audio id="audio" src="trasim_KINKED.mp3" preload="auto" autoplay loop></audio>
+    
+    <!-- Main content area -->
+    <div id="mainContent">
+        
+    </div>
+
+    <!-- Popup for controls -->
+    <div id="popup">
+        <h4>Audio Controls</h4>
+        <button id="playButton">Play</button>
+        <button id="pauseButton">Pause</button>
+        
+        <!-- Gain Control -->
+        <label for="gainSlider">Gain</label>
+        <input type="range" id="gainSlider" min="0" max="50" step="0.001" value="1">
+        <p>Gain: <span id="gainValue">1</span></p>
+
+        <!-- Compressor Controls -->
+        <label for="thresholdSlider">Threshold (dB)</label>
+        <input type="range" id="thresholdSlider" min="-1000" max="-24" step="1" value="-24">
+        <p>Threshold: <span id="thresholdValue">-24</span> dB</p>
+
+        <label for="ratioSlider">Ratio</label>
+        <input type="range" id="ratioSlider" min="2" max="4" step="0.1" value="4">
+        <p>Ratio: <span id="ratioValue">4</span></p>
+
+        <label for="attackSlider">Attack (s)</label>
+        <input type="range" id="attackSlider" min="0.009" max="1" step="0.01" value="0.009">
+        <p>Attack: <span id="attackValue">0.009</span> s</p>
+
+        <label for="releaseSlider">Release (s)</label>
+        <input type="range" id="releaseSlider" min="0" max="0.23" step="0.01" value="0.23">
+        <p>Release: <span id="releaseValue">0.23</span> s</p>
+
+        <!-- Biquad Filter Controls -->
+        <label for="filterType">Filter Type</label>
+        <select id="filterType">
+            <option value="lowpass">Low-pass</option>
+            <option value="highpass">High-pass</option>
+            <option value="bandpass">Band-pass</option>
+            <option value="lowshelf">Low-shelf</option>
+            <option value="highshelf">High-shelf</option>
+            <option value="notch">Notch</option>
+            <option value="allpass">All-pass</option>
+        </select>
+
+        <label for="filterFrequency">Filter Frequency (Hz)</label>
+        <input type="range" id="filterFrequency" min="20" max="20000" step="0.01" value="440">
+        <p>Filter Frequency: <span id="filterFrequencyValue">440</span> Hz</p>
+
+        <!-- Delay Control -->
+        <label for="delayTime">Delay Time (s)</label>
+        <input type="range" id="delayTime" min="0" max="0" step="0.01" value="0">
+        <p>Delay Time: <span id="delayTimeValue">0.5</span> s</p>
+
+        <!-- Panner Control -->
+        <label for="pannerX">Panner X</label>
+        <input type="range" id="pannerX" min="-1" max="1" step="0.001" value="0">
+        <p>Panner X: <span id="pannerXValue">0</span></p>
+
+        <label for="pannerY">Panner Y</label>
+        <input type="range" id="pannerY" min="-1" max="1" step="0.001" value="0">
+        <p>Panner Y: <span id="pannerYValue">0</span></p>
+    </div>
+
+    <!-- Plant emoji element -->
+    <div id="plantEmoji">🌱</div>
+
+    <script>
+        const audioElement = document.getElementById('audio');
+        const playButton = document.getElementById('playButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const gainSlider = document.getElementById('gainSlider');
+        const thresholdSlider = document.getElementById('thresholdSlider');
+        const ratioSlider = document.getElementById('ratioSlider');
+        const attackSlider = document.getElementById('attackSlider');
+        const releaseSlider = document.getElementById('releaseSlider');
+        const filterType = document.getElementById('filterType');
+        const filterFrequency = document.getElementById('filterFrequency');
+        const delayTime = document.getElementById('delayTime');
+        const pannerX = document.getElementById('pannerX');
+        const pannerY = document.getElementById('pannerY');
+        const plantEmoji = document.getElementById('plantEmoji');
+
+        // Create an Audio Context
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create nodes
+        const inflatorGainNode = audioContext.createGain();
+        const compressor = audioContext.createDynamicsCompressor();
+        const biquadFilter = audioContext.createBiquadFilter();
+        const delayNode = audioContext.createDelay();
+        const panner = audioContext.createPanner();
+
+        // Create a Media Element Source from the audio element
+        const source = audioContext.createMediaElementSource(audioElement);
+        
+        // Connect the nodes: source -> gain -> filter -> delay -> compressor -> panner -> destination
+        source.connect(inflatorGainNode);
+        inflatorGainNode.connect(biquadFilter);
+        biquadFilter.connect(delayNode);
+        delayNode.connect(compressor);
+        compressor.connect(panner);
+        panner.connect(audioContext.destination);
+
+        // Play button functionality
+        playButton.addEventListener('click', () => {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume(); // Resume the audio context if it's suspended
+            }
+            audioElement.play();
+            plantEmoji.style.display = 'block'; // Show the plant emoji when playing
+        });
+
+        // Pause button functionality
+        pauseButton.addEventListener('click', () => {
+            audioElement.pause();
+            plantEmoji.style.display = 'none'; // Hide the plant emoji when paused
+        });
+
+        // Update gain based on slider input
+        gainSlider.addEventListener('input', (e) => {
+            inflatorGainNode.gain.value = e.target.value; // Set the gain value for the inflator
+            document.getElementById('gainValue').textContent = e.target.value; // Update displayed value
+        });
+
+        // Update compressor settings based on slider input
+        thresholdSlider.addEventListener('input', (e) => {
+            compressor.threshold.value = e.target.value; // Set the threshold
+            document.getElementById('thresholdValue').textContent = e.target.value; // Update displayed value
+        });
+
+        ratioSlider.addEventListener('input', (e) => {
+            compressor.ratio.value = e.target.value; // Set the ratio
+            document.getElementById('ratioValue').textContent = e.target.value; // Update displayed value
+        });
+
+        attackSlider.addEventListener('input', (e) => {
+            compressor.attack.value = e.target.value; // Set the attack time
+            document.getElementById('attackValue').textContent = e.target.value; // Update displayed value
+        });
+
+        releaseSlider.addEventListener('input', (e) => {
+            compressor.release.value = e.target.value; // Set the release time
+            document.getElementById('releaseValue').textContent = e.target.value; // Update displayed value
+        });
+
+        // Update Biquad Filter settings
+        filterType.addEventListener('change', (e) => {
+            biquadFilter.type = e.target.value; // Set the filter type
+        });
+
+        filterFrequency.addEventListener('input', (e) => {
+            biquadFilter.frequency.value = e.target.value; // Set the filter frequency
+            document.getElementById('filterFrequencyValue').textContent = e.target.value; // Update displayed value
+        });
+
+        // Update Delay settings
+        delayTime.addEventListener('input', (e) => {
+            delayNode.delayTime.value = e.target.value; // Set the delay time
+            document.getElementById('delayTimeValue').textContent = e.target.value; // Update displayed value
+        });
+
+        // Update Panner settings
+        panner.setPosition(pannerX.value, pannerY.value, 0); // Set initial position
+
+        pannerX.addEventListener('input', (e) => {
+            panner.setPosition(e.target.value, pannerY.value, 0); // Update panner X position
+            document.getElementById('pannerXValue').textContent = e.target.value; // Update displayed value
+        });
+
+        pannerY.addEventListener('input', (e) => {
+            panner.setPosition(pannerX.value, e.target.value, 0); // Update panner Y position
+            document.getElementById('pannerYValue').textContent = e.target.value; // Update displayed value
+        });
+
+        // Limiter: Ensure output does not exceed -0.5 dB
+        const limiter = audioContext.createGain();
+        limiter.gain.value = 0.707; // -3 dB gain (approximately)
+        compressor.connect(limiter);
+        limiter.connect(audioContext.destination);
+    </script>
+</body>
+</html>
